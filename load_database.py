@@ -105,15 +105,37 @@ def fix_row_list(row):
         if row[i] == '' and i != 33:
             row[i] = 0
 
+
+def taskC4():
+    query = """SELECT * from Pokemon
+               WHERE type1 = 'fire' 
+               and type2 = 'fighting'
+               and base_total > 300"""
+    print("For task C4 we will be getting all fire/fighting type pokemon\nwhere their base stat total is greater than 300")
+    cursor.execute(query) 
+    for row in cursor.fetchall():
+        print(row)
+        print()
+
+def taskC6():
+    print()
+
 def main():
     try:
         cursor.execute("DROP TABLE pokemon")
     except:
         print()
-    print('Welcome to the anonymizer! Before we begin, we must\nload in the file and create the database')
+    print('Getting ready to load the database!')
     print_status("Hang in there!")
     load_csv()
-    print()
+    task = input("Which task are you trying to perform?\n1) Task C4\n2) Task C6")
+    while task != '1' and task != '2':
+        if task == '1':
+            taskC4()
+        elif task == '2':
+            taskC6()
+        else:
+            task = input("Which task are you trying to perform?\n1) Task C4\n2) Task C6")
     db.close()
 
 if __name__ == "__main__":

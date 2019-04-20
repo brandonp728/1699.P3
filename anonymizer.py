@@ -1,4 +1,67 @@
 import csv, random, os
+class Group:
+    def __init__(self, val):
+        self.vals = [val]
+        self.n = 1
+
+    def add_val(self, vals):
+        for val in vals:
+            self.vals.append(val)
+    
+    def __str__(self):
+        to_return = "[" + str(self.vals[0])
+        for i in range(1, len(self.vals)):
+            to_return += ", " + str(self.vals[i])
+        to_return += "]"
+        return to_return
+
+
+class Column:
+    def __init__(self):
+        self.group_list = []
+
+    def add_group(self, to_add):
+        if not self.in_group(to_add):
+            new_group = Group(to_add)
+            self.group_list.append(new_group)
+
+    def in_group(self, to_add):
+        for group in self.group_list:
+            for val in group.vals:
+                if val == to_add:
+                    group.n += 1
+                    return True
+        return False
+
+    def allAtLeastN(self, n):
+        for g in self.group_list:
+            if g.n < n:
+                return False
+        return True
+
+    def anonymize(self, k):
+        while not self.allAtLeastN(k):
+            self.merge(k)
+
+    def merge(self, k):
+        i = 0
+        while i < len(self.group_list)-1:
+            merge_group = self.group_list.pop(i+1)
+            group_to_be_merged = self.group_list[i]
+            group_to_be_merged.add_val(merge_group.vals)
+            group_to_be_merged.n += merge_group.n
+            i += 1
+        last_group = self.group_list[self.group_list.__len__()-1]
+        if(last_group.n < k):
+            last_group = self.group_list.pop(self.group_list.__len__()-1)
+            self.group_list[self.group_list.__len__()-1].add_val(last_group.vals)
+            self.group_list[self.group_list.__len__()-1].n + last_group.n
+    
+    def get_group(self, value):
+        for group in self.group_list:
+            if value in group.vals:
+                return group
+        return None
 
 def load_csv():
     with open('pokemon.csv', mode='r', encoding='utf8') as file:
@@ -16,142 +79,48 @@ def write_csv(table, headers):
         write_file = csv.writer(file, delimiter=',')
         write_file.writerow(headers)
         write_file.writerows(table)
-        # for row in table:
-        #     write_file.writerow(row)
 
-def anonymize(table):
-    one_ability_list = []
-    two_ability_list = []
-    three_ability_list = []
-    four_ability_list = []
-    five_ability_list = []
-    six_ability_list = []
+def anonymity(table, k, column_dict):
     for row in table:
-        abilities = row[0]
-        num_commas = abilities.count(',')
-        if num_commas == 0:
-            one_ability_list.append(abilities)
-        elif num_commas == 1:
-            two_ability_list.append(abilities)
-        elif num_commas == 2:
-            three_ability_list.append(abilities)
-        elif num_commas == 3:
-            four_ability_list.append(abilities)
-        elif num_commas == 4:
-            five_ability_list.append(abilities)
-        elif num_commas == 5:
-            six_ability_list.append(abilities)
+        column_dict['attack'].add_group(int(row[19]))
+        column_dict['defense'].add_group(int(row[24]))
+        column_dict['sp_attack'].add_group(int(row[29]))
+        column_dict['sp_defense'].add_group(int(row[30]))
+        column_dict['hp'].add_group(int(row[27]))
+        column_dict['speed'].add_group(int(row[31]))
+    for column in column_dict.items():
+        column[1].anonymize(k)
     for row in table:
-        # Attack stat
-        row[19] = anonymize_stat(row[19])
-        # Stat total
-        row[22] = anonymize_stat(row[22])
-        #Defense stat
-        row[24] = anonymize_stat(row[24])
-        # HP stat
-        row[27] = anonymize_stat(row[27])
-        # Special Attack Stat
-        row[29] = anonymize_stat(row[29])
-        # Special Defense Stat
-        row[30] = anonymize_stat(row[30])
-        # Speed stat
-        row[31] = anonymize_stat(row[31])
-        # Pokemon Type
-        full_type = row[32] + "/" + row[33]
-        new_types = anonymize_type(full_type)
-        type_array = new_types.split(":")
-        row[32] = type_array[0]
-        row[33] = type_array[1]
-        # Pokemon Ability
-        row[0] = anonymize_abilities(row[0], one_ability_list, two_ability_list, three_ability_list, four_ability_list, five_ability_list, six_ability_list)
-
-
-def anonymize_abilities(abilities, one_ability_list, two_ability_list, three_ability_list, four_ability_list, five_ability_list, six_ability_list):
-    num_commas = abilities.count(",")
-    rand_ability = ""
-    if num_commas == 0:
-        rand_ability = ability_helper(abilities, one_ability_list)
-    elif num_commas == 1:
-        rand_ability = ability_helper(abilities, two_ability_list)
-    elif num_commas == 2:
-        rand_ability = ability_helper(abilities, three_ability_list)
-    elif num_commas == 3:
-        rand_ability = ability_helper(abilities, four_ability_list)
-    elif num_commas == 4:
-        rand_ability = ability_helper(abilities, five_ability_list)
-    elif num_commas == 5:
-        rand_ability = ability_helper(abilities, six_ability_list)
-    return rand_ability
-
-def ability_helper(abilities, ability_list):
-    rand_int = random.randint(0, (ability_list.__len__()-1))
-    rand_ability = ability_list[rand_int]
-    while rand_ability == abilities:
-        rand_int = random.randint(0, (ability_list.__len__()-1))
-        rand_ability = ability_list[rand_int]
-    anon_ability = ""
-    return_format = random.randint(0, 1)
-    if return_format == 0:
-        anon_ability = "[" + abilities + ", " + rand_ability + "]"
-    else:
-        anon_ability = "[" + rand_ability + ", " + abilities + "]"
-    return anon_ability
-
-def anonymize_type(full_type):
-    types = ("","bug", "dark", "dragon", 
-    "normal" ,"ice", "fighting", 
-    "fire", "ghost", "ground", 
-    "grass", "psychic", "poison", 
-    "steel", "rock", "bug",
-    "electric", "fairy", "water")
-    type_array = full_type.split("/")
-    rand_type_int1 = random.randint(1, 18)
-    rand_type_int2 = random.randint(0, 18)
-    while rand_type_int2 == rand_type_int1:
-        rand_type_int2 = random.randint(0, 18)
-    rand_type1 = types[rand_type_int1]
-    rand_type2 = types[rand_type_int2]
-    if not rand_type2:
-        rand_type2 = "none"
-    if not type_array[1]:
-        type_array[1] = "none"
-    return_format = random.randint(0, 1)
-    anon_type1 = ""
-    if return_format == 0:
-        anon_type1 = "[" + type_array[0] + ", " + rand_type1 + "]"
-    else:
-        anon_type1 = "[" + rand_type1 + ", " + type_array[0] + "]"
-    return_format = random.randint(0, 1)
-    anon_type2 = ""
-    if return_format == 0:
-        anon_type2 = "[" + type_array[1] + ", " + rand_type2 + "]"
-    else:
-        anon_type2 = "[" + rand_type2 + ", " + type_array[1] + "]" 
-    new_types = anon_type1 + ":" + anon_type2
-    return new_types
-
-
-
-def anonymize_stat(stat):
-    stat_num = int(stat)
-    anon_val = random.randint(stat_num, int(stat_num*1.5))
-    return_format = random.randint(0, 1)
-    new_val = ""
-    if return_format == 0:
-        new_val = "[" + stat + ", " + str(anon_val) + "]"
-    else:
-        new_val = "[" + str(anon_val) + ", " + stat + "]"
-    return new_val
-
+        group = column_dict['attack'].get_group(int(row[19]))
+        row[19] = group.__str__()
+        group = column_dict['defense'].get_group(int(row[24]))
+        row[24] = group.__str__()
+        group = column_dict['hp'].get_group(int(row[27]))
+        row[27] = group.__str__()
+        group = column_dict['sp_attack'].get_group(int(row[29]))
+        row[29] = group.__str__()
+        group = column_dict['sp_defense'].get_group(int(row[30]))
+        row[30] = group.__str__()
+        group = column_dict['speed'].get_group(int(row[31]))
+        row[31] = group.__str__()
 
 def main():
     print("Welcome to the anonymizer! We will begin to anonymize the pokemon file now!")
+    print("First we must load the CSV file")
     table, headers = load_csv()
-    print("We will be implementing 8-Anonymity on this file ")
+    print("We will be implementing k-Anonymity on this file ")
+    k = input("Enter your preferred value of k please: ") 
     print("The following have been identified as quasi-identifiers")
-    print("Attack, Defense, Special Attack, Special Defense, Speed, Type, Base total, Ability")
+    print("Attack, Defense, Special Attack, Special Defense, Speed")
     print("Here we go!")
-    anonymize(table)
+    column_dict = {}
+    column_dict['hp'] = Column()
+    column_dict['attack'] = Column()
+    column_dict['defense'] = Column()
+    column_dict['sp_attack'] = Column()
+    column_dict['sp_defense'] = Column()
+    column_dict['speed'] = Column()
+    anonymity(table, int(k), column_dict)
     print("Done!")
     print("Time to write to the file! This will be outputted as pokeanon.csv")
     write_csv(table, headers)
