@@ -1,4 +1,4 @@
-import csv, sqlite3
+import csv, sqlite3, numpy as np
 
 db = sqlite3.connect('pokemon.db')
 cursor = db.cursor()
@@ -107,18 +107,26 @@ def fix_row_list(row):
 
 
 def taskC4():
-    query = """SELECT * from Pokemon
+    query = """SELECT count(*) from Pokemon
                WHERE type1 = 'fire' 
                and type2 = 'fighting'
                and base_total > 300"""
     print("For task C4 we will be getting all fire/fighting type pokemon\nwhere their base stat total is greater than 300")
-    cursor.execute(query) 
-    for row in cursor.fetchall():
-        print(row)
-        print()
+    cursor.execute(query)
+    count = cursor.fetchone()[0]
+    print("Count: " + str(count))
 
 def taskC6():
-    print()
+    query = """SELECT count(*) from Pokemon
+               WHERE type1 = 'water' 
+               and is_legendary = 1"""
+    print("For task C4 we will be getting the count of all legendary water type pokemon")
+    cursor.execute(query) 
+    result = cursor.fetchone()[0]
+    scale = 1.0
+    noise = np.random.laplace(scale)
+    print("Query result: " + str(result) + " Laplacian noise: " + str(noise))
+    print("Noise + Query: " + str(noise+result))
 
 def main():
     try:
@@ -128,14 +136,12 @@ def main():
     print('Getting ready to load the database!')
     print_status("Hang in there!")
     load_csv()
-    task = input("Which task are you trying to perform?\n1) Task C4\n2) Task C6")
-    while task != '1' and task != '2':
-        if task == '1':
-            taskC4()
-        elif task == '2':
-            taskC6()
-        else:
-            task = input("Which task are you trying to perform?\n1) Task C4\n2) Task C6")
+    task = input("Which task are you trying to perform?\n1) Task C4\n2) Task C6\n")
+    if task == '1':
+        taskC4()
+    elif task == '2':
+        taskC6()
+    print("Goodbye!")
     db.close()
 
 if __name__ == "__main__":
